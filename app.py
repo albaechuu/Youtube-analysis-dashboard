@@ -4,20 +4,59 @@ import re
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 페이지 기본 설정 ---
-st.set_page_config(page_title="유튜브 채널 분석 대시보드", layout="wide")
+# --- 1. 기본 설정 및 디자인 (코랩 디자인 이식) ---
+st.set_page_config(page_title="유튜브 채널 분석 대시보드", layout="centered")
 
-# --- 2. 보안: 비밀번호 체크 (나만 접속 가능하게) ---
+# 스트림릿 기본 UI 숨기기 및 코랩 스타일 주입
+st.markdown("""
+    <style>
+        /* 메인 배경 및 폰트 */
+        [data-testid="stAppViewContainer"] { background-color: #ffffff; }
+        .main { align-items: center; }
+        
+        /* 헤더 스타일 (900px 박스) */
+        .header-box {
+            background-color: #ffffff; padding: 40px 20px; 
+            border: 3px solid #000000; border-radius: 15px; 
+            margin-bottom: 35px; width: 100%; max-width: 800px;
+            display: flex; justify-content: center; align-items: center;
+            margin-left: auto; margin-right: auto;
+        }
+        .header-text {
+            color: #000000; margin: 0; font-family: 'Arial'; 
+            font-size: 32px; text-align: center; letter-spacing: 2px; font-weight: bold;
+        }
+
+        /* 버튼 스타일 (블랙 테마) */
+        div.stButton > button {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            font-weight: bold !important;
+            border-radius: 5px !important;
+            height: 50px !important;
+            width: 100% !important;
+            border: none !important;
+        }
+        div.stButton > button:hover { background-color: #333333 !important; }
+
+        /* 입력창 라벨 정렬 */
+        .stTextInput label, .stDateInput label {
+            font-weight: bold !important;
+            color: #000000 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- 2. 보안: 비밀번호 체크 (나만 접속) ---
 def check_password():
-    """비밀번호가 맞는지 확인하는 함수"""
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
 
     if not st.session_state["password_correct"]:
-        st.title("🔐 비밀 관제탑 접속")
+        st.markdown("<div class='header-box'><h1 class='header-text'>🔐 접속 대기 중</h1></div>", unsafe_allow_html=True)
         password = st.text_input("비밀번호를 입력하세요", type="password")
         if st.button("접속하기"):
-            if password == "0985": # <--- 여기에 본인만의 비밀번호를 설정하세요!
+            if password == "1234": # <--- 사용자님의 비밀번호
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
@@ -25,7 +64,7 @@ def check_password():
         return False
     return True
 
-# --- 3. 데이터 분석 로직 (이전과 동일) ---
+# --- 3. 분석 로직 ---
 def get_id_from_url(url, youtube):
     channel_id_match = re.search(r"channel/(UC[\w-]+)", url)
     if channel_id_match: return channel_id_match.group(1)
@@ -36,34 +75,29 @@ def get_id_from_url(url, youtube):
         if search_res.get('items'): return search_res['items'][0]['id']['channelId']
     return None
 
-# 비밀번호 통과 시 메인 대시보드 실행
+# 메인 화면 실행
 if check_password():
-    # --- 4. 대시보드 UI ---
-    st.markdown("<h1 style='text-align: center; border: 3px solid black; padding: 20px; border-radius: 15px;'>📊 유튜브 채널 분석 대시보드</h1>", unsafe_allow_html=True)
+    # 헤더 출력
+    st.markdown("<div class='header-box'><h1 class='header-text'>📊 유튜브 채널 분석 대시보드</h1></div>", unsafe_allow_html=True)
+
+    # 입력 UI (사이드바 안 쓰고 중앙에 배치)
+    api_key = st.secrets.get("YOUTUBE_API_KEY", "")
+    
+    url_input = st.text_input("🔗 유튜브 주소", value="https://youtube.com/@jtvnews2021")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("📅 시작 날짜", datetime.now() - timedelta(days=7))
+    with col2:
+        end_date = st.date_input("📅 종료 날짜", datetime.now())
+
     st.write("")
+    # 버튼 3개 가로 배치
+    b1, b2, b3 = st.columns(3)
+    with b1: v10 = st.button("1만뷰 이상")
+    with b2: v50 = st.button("5만뷰 이상")
+    with b3: v100 = st.button("10만뷰 이상")
 
-    # 사이드바 설정 (입력창들을 왼쪽으로 몰아서 결과 화면을 넓게 씀)
-    with st.sidebar:
-        st.header("⚙️ 설정")
-        # API 키는 보안을 위해 secrets에서 불러오거나, 없으면 입력받음
-        api_key = st.secrets.get("YOUTUBE_API_KEY", "") 
-        if not api_key:
-            api_key = st.text_input("YouTube API 키", type="password")
-        
-        channel_url = st.text_input("🔗 채널 주소", value="https://youtube.com/@jtvnews2021")
-        col1, col2 = st.columns(2)
-        with col1:
-            start_date = st.date_input("📅 시작 날짜", datetime.now())
-        with col2:
-            end_date = st.date_input("📅 종료 날짜", datetime.now())
-        
-        st.write("---")
-        st.write("🔥 **빠른 필터링**")
-        v10 = st.button("1만뷰 이상")
-        v50 = st.button("5만뷰 이상")
-        v100 = st.button("10만뷰 이상")
-
-    # 결과 처리 로직
     target_views = 0
     if v10: target_views = 10000
     elif v50: target_views = 50000
@@ -75,11 +109,10 @@ if check_password():
         else:
             try:
                 youtube = build('youtube', 'v3', developerKey=api_key)
-                target_id = get_id_from_url(channel_url, youtube)
+                target_id = get_id_from_url(url_input, youtube)
                 
                 if target_id:
                     with st.spinner('🚀 데이터를 분석 중입니다...'):
-                        # 채널 정보 가져오기
                         ch_res = youtube.channels().list(part='contentDetails,snippet', id=target_id).execute()
                         uploads_id = ch_res['items'][0]['contentDetails']['relatedPlaylists']['uploads']
                         
@@ -99,8 +132,8 @@ if check_password():
                                     if views >= target_views:
                                         videos.append({
                                             '썸네일': item['snippet']['thumbnails']['medium']['url'],
-                                            '제목': item['snippet']['title'],
-                                            '시간': pub_dt.strftime("%Y-%m-%d %H:%M"),
+                                            '영상 정보': item['snippet']['title'],
+                                            '날짜': pub_dt.strftime("%Y-%m-%d %H:%M"),
                                             '조회수': f"{views:,}회",
                                             '링크': f"https://www.youtube.com/watch?v={v_id}"
                                         })
@@ -110,11 +143,10 @@ if check_password():
                             if not next_page_token or pub_dt < s_dt: break
 
                     if videos:
-                        st.success(f"✅ 총 {len(videos)}개의 영상을 찾았습니다.")
-                        
-                        # 표 대신 카드 형식이나 데이터프레임으로 출력 (Streamlit은 표 출력이 아주 깔끔함)
+                        st.success(f"✅ {target_views:,}회 이상 영상 {len(videos)}개를 찾았습니다.")
                         df = pd.DataFrame(videos)
-                        st.data_editor(
+                        # 표 디자인을 최대한 깔끔하게 출력
+                        st.dataframe(
                             df,
                             column_config={
                                 "썸네일": st.column_config.ImageColumn("미리보기"),

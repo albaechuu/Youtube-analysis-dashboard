@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (코랩 감성 디자인 고정) ---
+# --- 1. 디자인 설정 (중앙 정렬 + 블랙 감성) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="centered")
 st.markdown("""
     <style>
@@ -35,17 +35,16 @@ if not st.session_state["auth"]:
             else: st.error("❌ 비밀번호 오류")
     st.stop()
 
-# --- 3. 메인 화면 (입력창 제거, 고정형) ---
-st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 실시간 분석 대시보드</div></div>", unsafe_allow_html=True)
+# --- 3. 메인 화면 (JTV 전용 고정형) ---
+st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
-# [점수 0점 비결] 채널 ID와 업로드 목록 ID를 아예 박아버렸습니다.
-CHANNEL_ID = "UCo_m-qY4D-oHhE-j_D8S08A"
-# JTV 뉴스의 업로드 목록 ID (채널 ID의 UC를 UU로 바꾸면 됩니다)
-UPLOADS_PLAYLIST_ID = "UUo_m-qY4D-oHhE-j_D8S08A"
+# [진짜 마스터 ID] 이제 이 ID로 404 에러를 해결합니다.
+CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
+UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 
 api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
-st.info("📢 현재 **JTV 전주방송 뉴스** 채널의 데이터를 실시간으로 분석합니다.")
+st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널 정보를 분석하고 있습니다.")
 
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
@@ -57,10 +56,10 @@ st.write("")
 # 버튼 중앙 배치
 _, btn_col, _ = st.columns([0.5, 2, 0.5])
 with btn_col:
-    submit = st.button("🚀 JTV 뉴스 데이터 긁어오기")
+    submit = st.button("🚀 데이터 분석 시작")
 
 if submit:
-    if not api_key: st.error("API 키가 없습니다.")
+    if not api_key: st.error("API 키를 확인해 주세요.")
     else:
         try:
             youtube = build('youtube', 'v3', developerKey=api_key)
@@ -69,9 +68,9 @@ if submit:
             s_dt = datetime.combine(start_date, datetime.min.time())
             e_dt = datetime.combine(end_date, datetime.max.time())
 
-            with st.spinner('유튜브 서버에서 데이터를 가져오는 중...'):
+            with st.spinner('유튜브에서 최신 소식을 가져오는 중...'):
                 while True:
-                    # [비용 1점] 목록 가져오기
+                    # 1. 목록 가져오기 (비용 1점)
                     res = youtube.playlistItems().list(
                         part='snippet,contentDetails', 
                         playlistId=UPLOADS_PLAYLIST_ID, 
@@ -80,10 +79,12 @@ if submit:
                     ).execute()
                     
                     for item in res['items']:
-                        pub_dt = datetime.strptime(item['snippet']['publishedAt'], '%Y-%m-%dT%H:%M:%SZ') + timedelta(hours=9)
+                        pub_raw = item['snippet']['publishedAt']
+                        pub_dt = datetime.strptime(pub_raw, '%Y-%m-%dT%H:%M:%SZ') + timedelta(hours=9)
+                        
                         if s_dt <= pub_dt <= e_dt:
                             v_id = item['contentDetails']['videoId']
-                            # [비용 1점] 개별 영상 조회수 확인
+                            # 2. 조회수 확인 (비용 1점)
                             v_stats = youtube.videos().list(part='statistics', id=v_id).execute()
                             views = int(v_stats['items'][0]['statistics'].get('viewCount', 0))
                             
@@ -102,12 +103,12 @@ if submit:
                     if not next_page_token or pub_dt < s_dt: break
 
                 if videos:
-                    st.success(f"✅ 분석 결과: 총 {len(videos)}개의 인기 영상이 발견되었습니다.")
+                    st.success(f"✅ {len(videos)}개의 영상을 찾았습니다!")
                     st.dataframe(pd.DataFrame(videos), 
                                  column_config={"썸네일": st.column_config.ImageColumn(), "링크": st.column_config.LinkColumn()}, 
                                  hide_index=True, use_container_width=True)
                 else:
-                    st.warning("🧐 설정한 조회수와 기간 내에 해당하는 영상이 없습니다.")
+                    st.warning("🧐 해당 기간 내에 조건에 맞는 영상이 없습니다.")
                     
         except Exception as e:
             st.error(f"⚠️ 시스템 오류: {e}")

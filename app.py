@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (강력한 중앙 정렬 CSS) ---
+# --- 1. 디자인 설정 (가장 강력한 중앙 정렬 CSS) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="centered")
 st.markdown("""
     <style>
@@ -14,31 +14,24 @@ st.markdown("""
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* [핵심] 모든 버튼 컨테이너를 중앙으로 정렬 */
-        div.stButton {
+        /* 버튼을 감싸는 박스 자체를 중앙으로 정렬 */
+        .stButton {
             display: flex;
             justify-content: center;
-            width: 100%;
-            margin-top: 10px;
         }
         
-        /* 버튼 본체 디자인 */
+        /* 버튼 본체 디자인 및 정렬 강제 적용 */
         div.stButton > button {
             background-color: #000 !important; 
             color: #fff !important;
             font-weight: bold !important; 
             border-radius: 5px !important;
             height: 55px !important; 
-            width: 320px !important; /* 위쪽 입력창보다 살짝 좁게 설정하여 포인트 부여 */
+            width: 320px !important; /* 버튼 너비 고정 */
             font-size: 18px !important; 
             border: none !important;
-            transition: 0.3s ease;
-        }
-        
-        div.stButton > button:hover {
-            background-color: #333 !important;
-            transform: translateY(-2px); /* 살짝 떠오르는 효과 */
-            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
+            display: block !important;
+            margin: 0 auto !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -48,9 +41,13 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): # 중앙 정렬 적용됨
-        if pwd == "0985": st.session_state["auth"] = True; st.rerun()
-        else: st.error("❌ 비밀번호 오류")
+    
+    # 3분할 칸을 만들어 가운데 칸에 버튼 배치 (구조적 중앙 정렬)
+    _, login_btn_col, _ = st.columns([1, 2, 1])
+    with login_btn_col:
+        if st.button("접속하기"):
+            if pwd == "0985": st.session_state["auth"] = True; st.rerun()
+            else: st.error("❌ 비밀번호 오류")
     st.stop()
 
 # --- 3. 메인 화면 ---
@@ -71,8 +68,13 @@ with c3: min_views = st.number_input("📈 최소 조회수 설정", value=1000,
 
 st.write("") 
 
-# 중앙 정렬된 데이터 분석 시작 버튼
-if st.button("🚀 데이터 분석 시작"):
+# --- [핵심] 데이터 분석 시작 버튼 중앙 배치 ---
+# 화면을 1:2:1 비율로 나누어 가운데 칸(2)에 버튼을 넣습니다.
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    submit = st.button("🚀 데이터 분석 시작")
+
+if submit:
     if not api_key: st.error("API 키를 확인해 주세요.")
     else:
         try:

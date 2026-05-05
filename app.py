@@ -42,7 +42,7 @@ if not st.session_state["auth"]:
     _, login_btn_col, _ = st.columns([1, 2, 1])
     with login_btn_col:
         if st.button("접속하기"):
-            if pwd == "1234": st.session_state["auth"] = True; st.rerun()
+            if pwd == "098500": st.session_state["auth"] = True; st.rerun()
             else: st.error("❌ 비밀번호 오류")
     st.stop()
 

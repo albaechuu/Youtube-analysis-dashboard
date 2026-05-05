@@ -3,29 +3,35 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (와이드 모드 사용하되 상단은 중앙 정렬 강제) ---
+# --- 1. 디자인 설정 (와이드 모드 적용) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 
 st.markdown("""
     <style>
+        /* 기본 배경 */
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
-        
-        /* [중앙 정렬 핵심] 상단 모든 요소(박스, 입력창, 버튼)를 800px 박스에 가두고 가운데 배치 */
-        /* 표(Data Editor)만 이 규칙에서 제외됩니다. */
-        .header-box, .stTextInput, .stInfo, [data-testid="stHorizontalBlock"], div[data-testid="stButton"], .stAlert {
-            max-width: 800px !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
+
+        /* [가장 중요] 상단의 모든 블록들을 화면 정중앙으로 정렬 */
+        [data-testid="stVerticalBlock"] > div {
+            align-self: center; /* 블록 자체를 중앙으로 이동 */
+            width: 100%;
+            max-width: 800px; /* 상단 요소들의 너비 제한 */
         }
 
-        /* 제목 박스 디자인 유지 */
+        /* [가장 중요] 결과 표(Data Editor)만 중앙 정렬 규칙에서 제외하고 꽉 채움 */
+        [data-testid="stVerticalBlock"] > div:has([data-testid="stDataEditor"]) {
+            align-self: stretch !important;
+            max-width: 100% !important;
+        }
+
+        /* 제목 박스 디자인 */
         .header-box {
             border: 3px solid #000; padding: 30px; border-radius: 15px; 
             text-align: center; margin-bottom: 25px;
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼 정중앙 정렬 및 너비 고정 */
+        /* 버튼 정중앙 정렬 및 디자인 */
         div[data-testid="stButton"] {
             display: flex;
             justify-content: center;
@@ -40,11 +46,6 @@ st.markdown("""
             font-size: 18px !important; 
             border: none !important;
         }
-
-        /* 표(Data Editor)는 위 중앙 정렬 제한을 풀어서 와이드하게 출력 */
-        [data-testid="stDataEditor"] {
-            max-width: 100% !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -53,7 +54,7 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): # CSS가 자동으로 중앙 정렬
+    if st.button("접속하기"): # 중앙 정렬됨
         if pwd == "1234": st.session_state["auth"] = True; st.rerun()
         else: st.error("❌ 비밀번호 오류")
     st.stop()
@@ -67,7 +68,7 @@ api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
 st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
 
-# 입력창들 (날짜, 조회수) - CSS에 의해 중앙으로 모임
+# 입력창들 (날짜, 조회수) - 중앙으로 모임
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
 with c2: end_date = st.date_input("📅 종료일", datetime.now())
@@ -121,7 +122,7 @@ if submit:
                 if videos:
                     st.success(f"✅ 분석 완료!")
                     
-                    # 결과 표 (와이드하게 전체 화면 활용)
+                    # 결과 표 (화면 가로 전체 사용)
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={

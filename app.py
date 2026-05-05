@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (중앙 정렬 + 블랙 감성) ---
+# --- 1. 디자인 설정 (중앙 정렬 + 블랙 감성 유지) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="centered")
 st.markdown("""
     <style>
@@ -42,7 +42,7 @@ if not st.session_state["auth"]:
     _, login_btn_col, _ = st.columns([1, 2, 1])
     with login_btn_col:
         if st.button("접속하기"):
-            if pwd == "5160": st.session_state["auth"] = True; st.rerun()
+            if pwd == "931504": st.session_state["auth"] = True; st.rerun()
             else: st.error("❌ 비밀번호 오류")
     st.stop()
 
@@ -96,7 +96,6 @@ if submit:
                             views = int(v_stats['items'][0]['statistics'].get('viewCount', 0))
                             
                             if views >= min_views:
-                                # 썸네일 고화질 주소로 변경
                                 thumb_url = item['snippet']['thumbnails'].get('high', item['snippet']['thumbnails']['medium'])['url']
                                 videos.append({
                                     '썸네일': thumb_url,
@@ -113,8 +112,7 @@ if submit:
                 if videos:
                     st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 발견했습니다.")
                     
-                    # --- [썸네일 크기 조절 핵심 구간] ---
-                    # st.dataframe을 st.data_editor로 교체하고 row_height를 추가했습니다.
+                    # --- [표 크기 극대화 핵심 구간] ---
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={
@@ -126,7 +124,8 @@ if submit:
                         }, 
                         hide_index=True, 
                         use_container_width=True,
-                        row_height=200 # <-- 이 숫자가 썸네일의 세로 크기를 결정합니다! (기본보다 5배 정도 큼)
+                        row_height=200,
+                        height=900 # <-- 이 부분을 추가해서 표 전체 높이를 확 키웠습니다!
                     )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")

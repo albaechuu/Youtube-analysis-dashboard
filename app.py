@@ -3,26 +3,26 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (Wide 모드 사용) ---
+# --- 1. 디자인 설정 (Wide 모드 + 정밀 중앙 정렬 CSS) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 st.markdown("""
     <style>
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
         
-        /* [중앙 정렬 핵심] 상단 요소들을 무조건 가운데로 모음 */
+        /* [가운데 정렬] 상단 모든 요소(박스, 입력창, 버튼)를 중앙으로 모음 */
+        .header-box, .stTextInput, .stDateInput, .stNumberInput, .stAlert, div.stButton {
+            max-width: 850px;
+            margin: 0 auto !important;
+        }
+
+        /* 제목 박스 디자인 */
         .header-box {
             border: 3px solid #000; padding: 30px; border-radius: 15px; 
             text-align: center; margin-bottom: 25px;
-            max-width: 800px; margin: 0 auto; /* 컬럼 없이 중앙 정렬 */
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼 정중앙 고정 */
-        div.stButton {
-            display: flex;
-            justify-content: center;
-            margin: 10px 0;
-        }
+        /* 버튼 본체 중앙 고정 및 디자인 */
         div.stButton > button {
             background-color: #000 !important; 
             color: #fff !important;
@@ -32,12 +32,14 @@ st.markdown("""
             width: 320px !important;
             font-size: 18px !important; 
             border: none !important;
+            display: block !important;
+            margin: 0 auto !important;
         }
 
-        /* 입력창과 안내문구도 중앙으로 제한 */
-        .stTextInput, .stAlert, [data-testid="stHorizontalBlock"] {
-            max-width: 800px;
-            margin: 0 auto;
+        /* 3분할 입력창 열(Column) 자체를 중앙으로 정렬 */
+        [data-testid="stHorizontalBlock"] {
+            max-width: 850px;
+            margin: 0 auto !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -47,7 +49,7 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): # 중앙 정렬 적용됨
+    if st.button("접속하기"): # 중앙 정렬됨
         if pwd == "1234": st.session_state["auth"] = True; st.rerun()
         else: st.error("❌ 비밀번호 오류")
     st.stop()
@@ -61,7 +63,7 @@ api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
 st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
 
-# 입력창 3개 (날짜, 조회수) - 이건 원래대로 3분할 유지 (중앙 모임 적용)
+# 입력창들 (날짜, 조회수) - CSS에 의해 중앙으로 모임
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
 with c2: end_date = st.date_input("📅 종료일", datetime.now())
@@ -115,7 +117,7 @@ if submit:
                 if videos:
                     st.success(f"✅ 분석 완료!")
                     
-                    # --- [결과 표] 상단과 다르게 화면 가로를 꽉 채우도록 설정 ---
+                    # [결과 표] 표는 중앙 정렬 제한을 받지 않고 전체 화면을 씁니다.
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={
@@ -123,9 +125,9 @@ if submit:
                             "링크": st.column_config.LinkColumn("영상 링크")
                         }, 
                         hide_index=True, 
-                        use_container_width=True, # 가로 꽉 채우기
-                        row_height=200,            # 썸네일 크게 유지
-                        height=1000                # 세로 길이 충분히
+                        use_container_width=True, 
+                        row_height=200,            
+                        height=1000                
                     )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")

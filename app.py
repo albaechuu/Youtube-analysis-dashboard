@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (가장 강력한 중앙 정렬 CSS) ---
+# --- 1. 디자인 설정 (중앙 정렬 + 블랙 감성) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="centered")
 st.markdown("""
     <style>
@@ -14,20 +14,18 @@ st.markdown("""
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼을 감싸는 박스 자체를 중앙으로 정렬 */
+        /* 버튼 정중앙 고정 */
         .stButton {
             display: flex;
             justify-content: center;
         }
-        
-        /* 버튼 본체 디자인 및 정렬 강제 적용 */
         div.stButton > button {
             background-color: #000 !important; 
             color: #fff !important;
             font-weight: bold !important; 
             border-radius: 5px !important;
             height: 55px !important; 
-            width: 320px !important; /* 버튼 너비 고정 */
+            width: 320px !important;
             font-size: 18px !important; 
             border: none !important;
             display: block !important;
@@ -41,19 +39,17 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    
-    # 3분할 칸을 만들어 가운데 칸에 버튼 배치 (구조적 중앙 정렬)
     _, login_btn_col, _ = st.columns([1, 2, 1])
     with login_btn_col:
         if st.button("접속하기"):
-            if pwd == "0985": st.session_state["auth"] = True; st.rerun()
+            if pwd == "1234": st.session_state["auth"] = True; st.rerun()
             else: st.error("❌ 비밀번호 오류")
     st.stop()
 
 # --- 3. 메인 화면 ---
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
-# [성공했던 마스터 ID]
+# [성공 마스터 ID]
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
 UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 
@@ -68,8 +64,7 @@ with c3: min_views = st.number_input("📈 최소 조회수 설정", value=1000,
 
 st.write("") 
 
-# --- [핵심] 데이터 분석 시작 버튼 중앙 배치 ---
-# 화면을 1:2:1 비율로 나누어 가운데 칸(2)에 버튼을 넣습니다.
+# 버튼 중앙 배치
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     submit = st.button("🚀 데이터 분석 시작")
@@ -115,9 +110,20 @@ if submit:
 
                 if videos:
                     st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 발견했습니다.")
-                    st.dataframe(pd.DataFrame(videos), 
-                                 column_config={"썸네일": st.column_config.ImageColumn(), "링크": st.column_config.LinkColumn()}, 
-                                 hide_index=True, use_container_width=True)
+                    
+                    # --- [핵심 수정 부분] 썸네일 크기를 최대로 키움 ---
+                    st.dataframe(
+                        pd.DataFrame(videos), 
+                        column_config={
+                            "썸네일": st.column_config.ImageColumn(
+                                label="미리보기",
+                                width="large"  # 이 부분이 썸네일을 크게 만듭니다!
+                            ), 
+                            "링크": st.column_config.LinkColumn("영상 링크")
+                        }, 
+                        hide_index=True, 
+                        use_container_width=True
+                    )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")
                     

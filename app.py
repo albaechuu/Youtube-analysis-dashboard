@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (Wide 모드 적용) ---
+# --- 1. 디자인 설정 (Wide 모드) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 
 st.markdown("""
@@ -11,33 +11,17 @@ st.markdown("""
         /* 기본 배경색 */
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
 
-        /* [가장 강력한 정렬] 표가 아닌 모든 위젯의 부모 컨테이너를 중앙으로 정렬 */
-        /* layout="wide"에서도 이 코드가 있으면 왼쪽으로 쏠리지 않습니다. */
-        .element-container:has(.header-box), 
-        .element-container:has(.stTextInput), 
-        .element-container:has(.stInfo), 
-        .element-container:has(.stAlert), 
-        .element-container:has([data-testid="stHorizontalBlock"]), 
-        .element-container:has(div.stButton) {
-            display: flex !important;
-            justify-content: center !important;
-            width: 100% !important;
+        /* [핵심] 상단 요소들을 가둘 중앙 정렬 컨테이너 */
+        .center-wrap {
+            max-width: 800px;
+            margin: 0 auto;
         }
-
-        /* 중앙 정렬되는 요소들의 최대 너비를 제한 (옹졸해 보이지 않게) */
-        .header-box, .stTextInput, .stInfo, .stAlert, [data-testid="stHorizontalBlock"], div.stButton {
-            width: 100% !important;
-            max-width: 850px !important;
-        }
-
-        /* 제목 박스 디자인 */
-        .header-box {
-            border: 3px solid #000; padding: 30px; border-radius: 15px; 
-            text-align: center; margin-bottom: 25px;
-        }
-        .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼 디자인 */
+        /* 버튼 정중앙 강제 고정 */
+        div.stButton {
+            display: flex;
+            justify-content: center;
+        }
         div.stButton > button {
             background-color: #000 !important; 
             color: #fff !important;
@@ -49,14 +33,17 @@ st.markdown("""
             border: none !important;
         }
 
-        /* [표] 결과 표는 위의 중앙 정렬 규칙을 무시하고 화면 끝까지 확장 */
-        .element-container:has([data-testid="stDataEditor"]) {
-            display: block !important;
-            width: 100% !important;
+        /* 제목 박스 디자인 복구 */
+        .header-box {
+            border: 3px solid #000; padding: 30px; border-radius: 15 -px; 
+            text-align: center; margin-bottom: 25px;
         }
-        div[data-testid="stDataEditor"] {
-            max-width: 100% !important;
-            width: 100% !important;
+        .header-text { color: #000; font-size: 28px; font-weight: bold; }
+        
+        /* 입력창 묶음도 중앙 정렬 박스 안에 가둠 */
+        [data-testid="stHorizontalBlock"] {
+            max-width: 800px;
+            margin: 0 auto !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -64,24 +51,29 @@ st.markdown("""
 # --- 2. 보안: 비밀번호 ---
 if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
+    # 상단 요소를 중앙 컨테이너로 감쌈
+    st.markdown('<div class="center-wrap">', unsafe_allow_html=True)
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): 
+    if st.button("접속하기"):
         if pwd == "1234": st.session_state["auth"] = True; st.rerun()
         else: st.error("❌ 비밀번호 오류")
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # --- 3. 메인 화면 ---
+# 상단 제목 및 안내는 중앙 컨테이너 안으로
+st.markdown('<div class="center-wrap">', unsafe_allow_html=True)
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
-# 채널 및 API 정보
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
 UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
 st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
+st.markdown('</div>', unsafe_allow_html=True)
 
-# 입력창 (날짜, 조회수) - 중앙 정렬된 850px 박스 안에 위치
+# 날짜/조회수 입력창 (중앙 정렬됨)
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
 with c2: end_date = st.date_input("📅 종료일", datetime.now())
@@ -90,9 +82,7 @@ with c3: min_views = st.number_input("📈 최소 조회수", value=1000, step=5
 st.write("") 
 
 # 분석 버튼 (중앙 정렬)
-submit = st.button("🚀 데이터 분석 시작")
-
-if submit:
+if st.button("🚀 데이터 분석 시작"):
     if not api_key: st.error("API 키를 확인해 주세요.")
     else:
         try:
@@ -102,7 +92,7 @@ if submit:
             s_dt = datetime.combine(start_date, datetime.min.time())
             e_dt = datetime.combine(end_date, datetime.max.time())
 
-            with st.spinner('유튜브 서버에서 데이터를 수집 중...'):
+            with st.spinner('데이터 수집 중...'):
                 while True:
                     res = youtube.playlistItems().list(
                         part='snippet,contentDetails', 
@@ -135,7 +125,7 @@ if submit:
                 if videos:
                     st.success(f"✅ 분석 완료!")
                     
-                    # [결과 표] 상단과 다르게 화면 가득 시원하게 출력
+                    # [결과 표] 중앙 컨테이너 밖에서 호출하여 화면 끝까지 넓게 사용
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={
@@ -143,9 +133,9 @@ if submit:
                             "링크": st.column_config.LinkColumn("영상 링크")
                         }, 
                         hide_index=True, 
-                        use_container_width=True, 
-                        row_height=200,            
-                        height=900                 
+                        use_container_width=True, # 화면 끝까지 채우기
+                        row_height=200,            # 썸네일 5배 확대
+                        height=1000                # 스크롤 방지용 높이
                     )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")

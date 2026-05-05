@@ -3,34 +3,29 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (Wide 레이아웃 + 중앙 정렬 CSS) ---
+# --- 1. 디자인 설정 (Wide 레이아웃) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 
 st.markdown("""
     <style>
-        /* 기본 배경 및 폰트 설정 */
+        /* 기본 배경 */
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
         
-        /* [핵심] 상단 요소들만 너비를 제한하고 가운데로 정렬 */
-        .header-box, .stTextInput, .stInfo, [data-testid="stHorizontalBlock"], div.stButton {
+        /* 1. 상단 박스 및 안내문 중앙 정렬 */
+        .header-box, .stAlert {
             max-width: 800px;
-            margin-left: auto !important;
-            margin-right: auto !important;
+            margin: 0 auto !important;
         }
 
-        /* 제목 박스 디자인 */
-        .header-box {
-            border: 3px solid #000; padding: 30px; border-radius: 15px; 
-            text-align: center; margin-bottom: 25px;
-        }
-        .header-text { color: #000; font-size: 28px; font-weight: bold; }
-        
-        /* 버튼 정중앙 박제 및 디자인 */
-        div.stButton {
+        /* 2. [핵심] 버튼 정중앙 정렬 - 스트림릿 내부 div 구조를 강제로 타겟팅 */
+        div[data-testid="stButton"] {
+            text-align: center;
             display: flex;
             justify-content: center;
+            width: 100%;
         }
-        div.stButton > button {
+        
+        div[data-testid="stButton"] > button {
             background-color: #000 !important; 
             color: #fff !important;
             font-weight: bold !important; 
@@ -41,8 +36,21 @@ st.markdown("""
             border: none !important;
         }
 
-        /* 표(Data Editor)는 위 중앙 정렬 규칙에서 제외하여 넓게 펼침 */
-        [data-testid="stDataEditor"] {
+        /* 3. 입력창 그룹(날짜, 조회수) 중앙으로 모으기 */
+        [data-testid="stHorizontalBlock"] {
+            max-width: 800px;
+            margin: 0 auto !important;
+        }
+
+        /* 4. 제목 박스 디자인 */
+        .header-box {
+            border: 3px solid #000; padding: 30px; border-radius: 15px; 
+            text-align: center; margin-bottom: 25px;
+        }
+        .header-text { color: #000; font-size: 28px; font-weight: bold; }
+
+        /* 5. 표(Data Editor)는 중앙 정렬 제한을 풀어서 와이드하게 출력 */
+        div[data-testid="stDataEditor"] {
             max-width: 100% !important;
         }
     </style>
@@ -52,13 +60,15 @@ st.markdown("""
 if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
+    
+    # 비밀번호 입력창 중앙 배치를 위해 빈 텍스트로 높이 조절 및 마진
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): # CSS에 의해 자동으로 중앙 정렬
-        if pwd == "931504": st.session_state["auth"] = True; st.rerun()
+    if st.button("접속하기"): # CSS에 의해 강제 중앙 정렬
+        if pwd == "1234": st.session_state["auth"] = True; st.rerun()
         else: st.error("❌ 비밀번호 오류")
     st.stop()
 
-# --- 3. 메인 화면 ---
+# --- 3. 메인 화면 (레이아웃 완벽 복구) ---
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
@@ -67,7 +77,7 @@ api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
 st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
 
-# 입력창들 (날짜, 조회수) - CSS에 의해 중앙으로 모임
+# 입력 영역 (날짜/조회수) - CSS가 자동으로 중앙으로 모음
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
 with c2: end_date = st.date_input("📅 종료일", datetime.now())
@@ -75,7 +85,7 @@ with c3: min_views = st.number_input("📈 최소 조회수", value=1000, step=5
 
 st.write("") 
 
-# 분석 버튼 (중앙 정렬)
+# 분석 버튼 (CSS가 강제로 정중앙 배치)
 submit = st.button("🚀 데이터 분석 시작")
 
 if submit:
@@ -121,7 +131,7 @@ if submit:
                 if videos:
                     st.success(f"✅ 분석 완료!")
                     
-                    # 결과 표 (화면 전체 사용)
+                    # 결과 표 (와이드하게 전체 화면 활용)
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={

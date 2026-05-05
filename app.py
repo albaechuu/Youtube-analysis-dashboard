@@ -3,7 +3,7 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (가장 강력한 중앙 정렬 설정) ---
+# --- 1. 디자인 설정 (강력한 중앙 정렬 CSS) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="centered")
 st.markdown("""
     <style>
@@ -14,24 +14,31 @@ st.markdown("""
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* [핵심] 버튼 정중앙 정렬: 마진(Auto)을 사용하는 방식 */
-        .stButton > button {
-            display: block !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
+        /* [핵심] 모든 버튼 컨테이너를 중앙으로 정렬 */
+        div.stButton {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        /* 버튼 본체 디자인 */
+        div.stButton > button {
             background-color: #000 !important; 
             color: #fff !important;
             font-weight: bold !important; 
             border-radius: 5px !important;
             height: 55px !important; 
-            width: 320px !important;
+            width: 320px !important; /* 위쪽 입력창보다 살짝 좁게 설정하여 포인트 부여 */
             font-size: 18px !important; 
             border: none !important;
-            transition: 0.3s;
+            transition: 0.3s ease;
         }
-        .stButton > button:hover {
+        
+        div.stButton > button:hover {
             background-color: #333 !important;
-            transform: scale(1.02); /* 살짝 커지는 효과 */
+            transform: translateY(-2px); /* 살짝 떠오르는 효과 */
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.2);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -41,7 +48,7 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     pwd = st.text_input("PASSWORD", type="password")
-    if st.button("접속하기"): # 로그인 버튼
+    if st.button("접속하기"): # 중앙 정렬 적용됨
         if pwd == "0985": st.session_state["auth"] = True; st.rerun()
         else: st.error("❌ 비밀번호 오류")
     st.stop()
@@ -49,13 +56,13 @@ if not st.session_state["auth"]:
 # --- 3. 메인 화면 ---
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
-# [성공했던 그 마스터 ID]
+# [성공했던 마스터 ID]
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
 UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 
 api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
-st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널 정보를 분석하고 있습니다.")
+st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
 
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
@@ -64,10 +71,8 @@ with c3: min_views = st.number_input("📈 최소 조회수 설정", value=1000,
 
 st.write("") 
 
-# 버튼 출력 (CSS가 자동으로 중앙을 잡아줍니다)
-submit = st.button("🚀 데이터 분석 시작")
-
-if submit:
+# 중앙 정렬된 데이터 분석 시작 버튼
+if st.button("🚀 데이터 분석 시작"):
     if not api_key: st.error("API 키를 확인해 주세요.")
     else:
         try:
@@ -77,7 +82,7 @@ if submit:
             s_dt = datetime.combine(start_date, datetime.min.time())
             e_dt = datetime.combine(end_date, datetime.max.time())
 
-            with st.spinner('유튜브 데이터를 긁어오는 중...'):
+            with st.spinner('유튜브 서버에서 데이터를 수집 중...'):
                 while True:
                     res = youtube.playlistItems().list(
                         part='snippet,contentDetails', 
@@ -107,7 +112,7 @@ if submit:
                     if not next_page_token or pub_dt < s_dt: break
 
                 if videos:
-                    st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 찾았습니다.")
+                    st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 발견했습니다.")
                     st.dataframe(pd.DataFrame(videos), 
                                  column_config={"썸네일": st.column_config.ImageColumn(), "링크": st.column_config.LinkColumn()}, 
                                  hide_index=True, use_container_width=True)

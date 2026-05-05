@@ -3,18 +3,18 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (전체는 Wide로 하되, 상단만 CSS로 가둠) ---
+# --- 1. 디자인 설정 (전체는 Wide로 열어줍니다) ---
 st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 
 st.markdown("""
     <style>
-        /* 배경색 및 기본 폰트 */
+        /* 배경색 설정 */
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
 
-        /* [핵심] 표(Data Editor)를 제외한 모든 요소를 800px 너비로 제한하고 중앙 정렬 */
-        /* 이 코드가 버튼, 입력창, 안내문을 강제로 가운데로 모읍니다. */
-        [data-testid="stVerticalBlock"] > div:not(:has([data-testid="stDataEditor"])) {
-            max-width: 800px !important;
+        /* [핵심] 상단 요소들만 중앙으로 모으기 (표 제외) */
+        /* 제목박스, 정보창, 입력창, 버튼들을 850px 너비로 제한하고 가운데로 정렬합니다. */
+        .header-box, .stInfo, .stAlert, [data-testid="stHorizontalBlock"], div[data-testid="stButton"], .stTextInput {
+            max-width: 850px !important;
             margin-left: auto !important;
             margin-right: auto !important;
         }
@@ -23,15 +23,13 @@ st.markdown("""
         .header-box {
             border: 3px solid #000; padding: 30px; border-radius: 15px; 
             text-align: center; margin-bottom: 25px;
-            width: 100%;
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼 정중앙 강제 고정 */
+        /* 버튼 정중앙 박제 */
         div[data-testid="stButton"] {
             display: flex !important;
             justify-content: center !important;
-            width: 100% !important;
         }
         div[data-testid="stButton"] > button {
             background-color: #000 !important; 
@@ -39,12 +37,13 @@ st.markdown("""
             font-weight: bold !important; 
             border-radius: 5px !important;
             height: 55px !important; 
-            width: 320px !important;
+            width: 320px !important; /* 버튼은 옹졸하지 않게 크기 유지 */
             font-size: 18px !important; 
             border: none !important;
         }
 
-        /* 표(Data Editor)는 위의 제한을 무시하고 100% 가로 너비 사용 */
+        /* [가장 중요] 표(Data Editor)의 가로 제한을 완전히 풀어버림 */
+        /* 위에서 정한 850px 규칙을 무시하고 화면 100%를 쓰게 합니다. */
         div[data-testid="stDataEditor"] {
             max-width: 100% !important;
             width: 100% !important;
@@ -65,13 +64,14 @@ if not st.session_state["auth"]:
 # --- 3. 메인 화면 ---
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
+# 채널 및 API 설정
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
 UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
 st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
 
-# 입력 영역 (날짜, 조회수) - 중앙 정렬됨
+# 입력 영역 (날짜, 조회수) - 3분할이지만 전체가 중앙 850px 안에 위치함
 c1, c2, c3 = st.columns(3)
 with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
 with c2: end_date = st.date_input("📅 종료일", datetime.now())
@@ -79,7 +79,7 @@ with c3: min_views = st.number_input("📈 최소 조회수", value=1000, step=5
 
 st.write("") 
 
-# 분석 버튼 (중앙 정렬됨)
+# 분석 버튼 (중앙 정렬)
 submit = st.button("🚀 데이터 분석 시작")
 
 if submit:
@@ -92,7 +92,7 @@ if submit:
             s_dt = datetime.combine(start_date, datetime.min.time())
             e_dt = datetime.combine(end_date, datetime.max.time())
 
-            with st.spinner('데이터 수집 중...'):
+            with st.spinner('유튜브 서버에서 데이터를 수집 중...'):
                 while True:
                     res = youtube.playlistItems().list(
                         part='snippet,contentDetails', 
@@ -123,9 +123,9 @@ if submit:
                     if not next_page_token or pub_dt < s_dt: break
 
                 if videos:
-                    st.success(f"✅ 분석 완료!")
+                    st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 발견했습니다.")
                     
-                    # [결과 표] 이 부분만 화면 가로 전체를 씁니다.
+                    # [결과 표] 상단 중앙 정렬과 상관없이 화면 끝까지 광활하게 펼쳐집니다.
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={
@@ -135,7 +135,7 @@ if submit:
                         hide_index=True, 
                         use_container_width=True, 
                         row_height=200,            
-                        height=1000                
+                        height=900                 
                     )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")

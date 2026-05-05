@@ -3,13 +3,13 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
-# --- 1. 디자인 설정 (중앙 정렬 해제 -> 화면을 꽉 채우는 "wide"로 변경) ---
-st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") # 여기서 "wide"가 표를 크게 만듭니다.
+# --- 1. 디자인 설정 (와이드 레이아웃을 쓰되, 상단은 중앙 정렬 강제) ---
+st.set_page_config(page_title="JTV 뉴스 데이터 센터", layout="wide") 
 st.markdown("""
     <style>
         [data-testid="stAppViewContainer"] { background-color: #ffffff; }
         
-        /* 상단 박스가 너무 넓어지지 않게 너비 조절 */
+        /* 제목 박스 중앙 고정 */
         .header-box {
             border: 3px solid #000; padding: 30px; border-radius: 15px; 
             text-align: center; margin-bottom: 25px;
@@ -17,8 +17,8 @@ st.markdown("""
         }
         .header-text { color: #000; font-size: 28px; font-weight: bold; }
         
-        /* 버튼 정중앙 고정 */
-        .stButton {
+        /* 모든 버튼 정중앙 박제 */
+        div.stButton {
             display: flex;
             justify-content: center;
         }
@@ -31,8 +31,13 @@ st.markdown("""
             width: 320px !important;
             font-size: 18px !important; 
             border: none !important;
-            display: block !important;
-            margin: 0 auto !important;
+        }
+        
+        /* 정보 텍스트박스 중앙 너비 제한 */
+        .stAlert {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -42,7 +47,7 @@ if "auth" not in st.session_state: st.session_state["auth"] = False
 if not st.session_state["auth"]:
     st.markdown("<div class='header-box'><div class='header-text'>🔐 데이터 센터 접속</div></div>", unsafe_allow_html=True)
     
-    # 비밀번호 입력창도 가운데 오도록 컬럼 사용
+    # 비밀번호 입력창 중앙 정렬
     _, pwd_col, _ = st.columns([1, 1, 1])
     with pwd_col:
         pwd = st.text_input("PASSWORD", type="password")
@@ -51,16 +56,16 @@ if not st.session_state["auth"]:
             else: st.error("❌ 비밀번호 오류")
     st.stop()
 
-# --- 3. 메인 화면 (나머지는 그대로 유지) ---
+# --- 3. 메인 화면 (디자인 완벽 복구) ---
 st.markdown("<div class='header-box'><div class='header-text'>📊 JTV 뉴스 정밀 분석 대시보드</div></div>", unsafe_allow_html=True)
 
 CHANNEL_ID = "UCWGk_-J9WJxgFBAgJXi4ilA"
 UPLOADS_PLAYLIST_ID = "UUWGk_-J9WJxgFBAgJXi4ilA"
 api_key = st.secrets.get("YOUTUBE_API_KEY", "")
 
-# 입력창들도 가운데 모여 있도록 컬럼 배치
-_, input_col, _ = st.columns([0.1, 0.8, 0.1])
-with input_col:
+# 입력 영역 중앙 정렬 복구
+_, input_area, _ = st.columns([0.2, 0.6, 0.2])
+with input_area:
     st.info("📢 현재 **JTV 뉴스 (@jtvnews2021)** 채널의 데이터를 분석 중입니다.")
     c1, c2, c3 = st.columns(3)
     with c1: start_date = st.date_input("📅 분석 시작일", datetime.now() - timedelta(days=7))
@@ -69,12 +74,8 @@ with input_col:
 
 st.write("") 
 
-# 버튼 중앙 배치
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    submit = st.button("🚀 데이터 분석 시작")
-
-if submit:
+# 버튼 중앙 배치 (기존 방식 그대로)
+if st.button("🚀 데이터 분석 시작"):
     if not api_key: st.error("API 키를 확인해 주세요.")
     else:
         try:
@@ -84,7 +85,7 @@ if submit:
             s_dt = datetime.combine(start_date, datetime.min.time())
             e_dt = datetime.combine(end_date, datetime.max.time())
 
-            with st.spinner('유튜브 서버에서 데이터를 수집 중...'):
+            with st.spinner('데이터 수집 중...'):
                 while True:
                     res = youtube.playlistItems().list(
                         part='snippet,contentDetails', 
@@ -115,9 +116,9 @@ if submit:
                     if not next_page_token or pub_dt < s_dt: break
 
                 if videos:
-                    st.success(f"✅ 분석 완료! 총 {len(videos)}개의 영상을 발견했습니다.")
+                    st.success(f"✅ 분석 완료!")
                     
-                    # --- [핵심] 이제 표가 화면 가로를 꽉 채우고 버튼 없이 크게 보입니다 ---
+                    # --- [핵심] 상단은 중앙 정렬이지만, 표는 전체 화면 활용 ---
                     st.data_editor(
                         pd.DataFrame(videos), 
                         column_config={
@@ -127,7 +128,7 @@ if submit:
                         hide_index=True, 
                         use_container_width=True, # 가로 꽉 채우기
                         row_height=200,            # 썸네일 크게 유지
-                        height=1200                # 세로 길이도 충분히 확보
+                        height=1000                # 세로 길이 확보
                     )
                 else:
                     st.warning("🧐 해당 조건에 맞는 영상이 없습니다.")
